@@ -8,6 +8,22 @@ import Levenshtein as lv
 path_to_cache = '../cache'
 bb_cache_filename = 'bb_dict_cache.pkl'
 
+# convert the wordnet corpus to an indexed list
+# if already present, return from cache
+def get_wordnet_index(output = None):
+    if not output : output = 'cache/wordnet_index.pkl'
+    if(not os.path.exists(output)):
+        # download the wordnet corpus
+        nltk.download('wordnet')
+        wordnet = list(wn.words(lang='eng'))
+        with open(output, 'wb') as f:
+            pickle.dump(wordnet, f)
+    else:
+        with open(output, 'rb') as f:
+            wordnet = pickle.load(f)
+        return wordnet
+
+
 # split the data into groups of words separated by words starting with the character char
 def split_data(data, char):
     groups = []
@@ -36,12 +52,10 @@ def split_data(data, char):
 def calculate_distance(bb_groups, k = 10, output = None):
     if not output:
         output = '../cache/distances.pkl'
-    # dict for storing top k lv distanced words k = 10
-    k_nearest_words = {}
+    # matrix for storing top k lv distanced words k = 10 for each mw in bb_groups
+    bb_group_keys = bb_groups.keys()
+    k_nearest_words =
 
-    # download the wordnet corpus
-    nltk.download('wordnet')
-    wordnet = list(wn.words(lang='eng'))
     for group in bb_groups:
         for mw in group[1:]:
             k_nearest_words[mw] = {}

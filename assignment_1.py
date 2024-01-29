@@ -12,14 +12,10 @@ import utils.functionals as F
 
 if __name__ == '__main__':
 
-    # download the wordnet corpus
-    nltk.download('wordnet')
-    wordnet = list(wn.words(lang='eng'))
-    wordnet_df = pd.DataFrame(wordnet)
 
     # bb = birkbeck
     bb_dict = F.load_bb_dict('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
-
+    wordnet = F.get_wordnet_index('cache/wordnet_index.pkl')
 
 
     for i in tqdm(range(0, len(bb), 2)):
