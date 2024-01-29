@@ -14,7 +14,7 @@ if __name__ == '__main__':
 
 
     # bb = birkbeck
-    bb_dict = F.load_bb_dict('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
+    bb_dict = F.load_bb_groups('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
     wordnet = F.get_wordnet_index('cache/wordnet_index.pkl')
 
 

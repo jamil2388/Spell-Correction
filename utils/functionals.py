@@ -5,7 +5,7 @@ import nltk
 from nltk.corpus import wordnet as wn
 import Levenshtein as lv
 
-path_to_cache = '../cache'
+path_to_cache = 'cache'
 bb_cache_filename = 'bb_dict_cache.pkl'
 
 # convert the wordnet corpus to an indexed list
@@ -50,11 +50,13 @@ def split_data(data, char):
 # for each misspelled word in bb w1, this will calculate the
 # levelshtein distance of each word in wordnet in every iteration
 def calculate_distance(bb_groups, k = 10, output = None):
+    wordnet = get_wordnet_index()
+
     if not output:
-        output = '../cache/distances.pkl'
+        output = 'cache/distances.pkl'
     # matrix for storing top k lv distanced words k = 10 for each mw in bb_groups
     bb_group_keys = bb_groups.keys()
-    k_nearest_words =
+    k_nearest_words = []
 
     for group in bb_groups:
         for mw in group[1:]:
@@ -67,7 +69,7 @@ def calculate_distance(bb_groups, k = 10, output = None):
 
 # convert the birkbeck data to dictionary of correct to misspelled words
 def load_bb_groups(url):
-    bb_cache_filepath = f'path_to_cache/{bb_cache_filename}'
+    bb_cache_filepath = f'{path_to_cache}/{bb_cache_filename}'
 
     # if data already exists, then lazy load
     if(os.path.exists(bb_cache_filepath)):
