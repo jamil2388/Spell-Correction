@@ -79,13 +79,7 @@ def load_bb_groups(url):
         bb_corpus = request.urlopen(url).read().decode('utf-8')
         bb_groups = split_data(bb_corpus, '$')
 
-        for group in bb_groups:
-            pass
-
-
-        # process the data to dict
-
 
         with open(bb_cache_filepath,'wb') as f:
-            pickle.dump(bb_dict, f)
-    return bb_dict
+            pickle.dump(bb_groups, f)
+    return bb_groups
