@@ -21,7 +21,7 @@ def get_wordnet_index(output = None):
     else:
         with open(output, 'rb') as f:
             wordnet = pickle.load(f)
-        return wordnet
+    return wordnet
 
 
 # split the data into groups of words separated by words starting with the character char
@@ -47,8 +47,8 @@ def split_data(data, char):
     return groups
 
 # create levenshtein distance cache
-# for each misspelled word in bb w1, this will calculate the
-# levelshtein distance of each word in wordnet in every iteration
+# for each misspelled word in bb w_i, this will calculate the
+# levelshtein distance of each word in wordnet
 def calculate_distance(bb_groups, k = 10, output = None):
     wordnet = get_wordnet_index()
 
