@@ -6,7 +6,8 @@ from nltk.corpus import wordnet as wn
 import Levenshtein as lv
 
 path_to_cache = 'cache'
-bb_cache_filename = 'bb_dict_cache.pkl'
+bb_cache_filename = 'bb_groups.pkl'
+bb_groups_index_filename = 'bb_groups_index.pkl' # the dictionary to store
 
 # convert the wordnet corpus to an indexed list
 # if already present, return from cache
@@ -37,9 +38,9 @@ def split_data(data, char):
             # start a new group when a word with '$' is encountered
             if current_group:
                 groups.append(current_group)
-            current_group = [word[1:]]  # remove the starting dollar sign
+            current_group = [word[1:].lower()]  # remove the starting dollar sign
         else:
-            current_group.append(word)
+            current_group.append(word.lower())
     # add the last group if it's not empty
     if current_group:
         groups.append(current_group)
@@ -51,12 +52,13 @@ def split_data(data, char):
 # levelshtein distance of each word in wordnet
 def calculate_distance(bb_groups, k = 10, output = None):
     wordnet = get_wordnet_index()
+    wn_length = len(wordnet)
+    bb_groups
 
-    if not output:
-        output = 'cache/distances.pkl'
+    if not output: output = 'cache/distances.pkl'
     # matrix for storing top k lv distanced words k = 10 for each mw in bb_groups
-    bb_group_keys = bb_groups.keys()
-    k_nearest_words = []
+
+    ed_matrix = [[] for i in range()]
 
     for group in bb_groups:
         for mw in group[1:]:
@@ -69,6 +71,10 @@ def calculate_distance(bb_groups, k = 10, output = None):
 
 # convert the birkbeck data to dictionary of correct to misspelled words
 def load_bb_groups(url):
+    # birkbeck has
+    # total words : 42269
+    # correct words : 6136
+    # misspelled words : 36133
     bb_cache_filepath = f'{path_to_cache}/{bb_cache_filename}'
 
     # if data already exists, then lazy load
@@ -78,7 +84,6 @@ def load_bb_groups(url):
     else:
         bb_corpus = request.urlopen(url).read().decode('utf-8')
         bb_groups = split_data(bb_corpus, '$')
-
 
         with open(bb_cache_filepath,'wb') as f:
             pickle.dump(bb_groups, f)

@@ -18,6 +18,7 @@ if __name__ == '__main__':
     wordnet = F.get_wordnet_index('cache/wordnet_index.pkl')
 
 
+
     for i in tqdm(range(0, len(bb), 2)):
         print(f'w1 : {bb[i]}, w2 : {bb[i + 1]}')
 
