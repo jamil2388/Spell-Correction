@@ -6,12 +6,18 @@ from nltk.corpus import wordnet as wn
 import Levenshtein as lv
 from tqdm import tqdm
 import numpy as np
+import multiprocessing as mp
+from param import settings as params
 
-num_cpu_cores = os.cpu_count() - 2
-path_to_cache = 'cache'
-bb_cache_filename = 'bb_groups.pkl'
-bb_groups_index_filename = 'bb_groups_index.pkl' # the dictionary to store
-toy = True
+num_cpu_cores = params['num_cpu_cores']
+num_processes = num_cpu_cores
+path_to_cache = params['path_to_cache']
+bb_groups_filename = params['bb_groups_filename']
+toy = params['toy']
+batched = params['batched']
+
+# print(num_cpu_cores, num_processes, path_to_cache, bb_groups_filename, toy, batched)
+med_matrix = [] # matrix for storing lv distances
 
 # convert the birkbeck data to dictionary of correct to misspelled words
 def get_bb_groups(url):
@@ -19,7 +25,7 @@ def get_bb_groups(url):
     # total words : 42269
     # correct words : 6136
     # misspelled words : 36133
-    bb_cache_filepath = f'{path_to_cache}/{bb_cache_filename}'
+    bb_cache_filepath = f'{path_to_cache}/{bb_groups_filename}'
 
     # if data already exists, then lazy load
     if(os.path.exists(bb_cache_filepath)):
@@ -74,7 +80,7 @@ def split_data(data, char):
 # levelshtein distance of each word in wordnet
 def get_med_matrix(bb_groups, wordnet, output = None):
 
-    if not output: output = 'cache/med_matrix_sorted.pkl'
+    if not output: output = f'cache/med_matrix_sorted{".toy" if toy else ""}.pkl'
     if os.path.exists(output) : return read_file(output)
 
     if toy:
@@ -84,7 +90,6 @@ def get_med_matrix(bb_groups, wordnet, output = None):
     wn_length = len(wordnet) # number of tokens in wordnet
     num_groups_bb = len(bb_groups) # number of rows in bb_groups after grouping
 
-    med_matrix = [] # matrix for storing lv distances
     row = 0 # count to store the number of misspelled tokens visited from bb_groups, also the current row count of the matrix
 
     # create matrix iteratively
@@ -103,11 +108,45 @@ def get_med_matrix(bb_groups, wordnet, output = None):
 
     # distribute the med task to cores
     rows = np.arange(row)
-    batches = np.array_split(rows, num_cpu_cores)
 
     row = 0
-    for batch in batches:
-        for b in batch:
+
+    if batched :
+        def process_rows(rows):
+            result = []
+            for i in tqdm(rows, position=0, leave=False):
+                row_results = []
+                for j in range(wn_length):
+                    group = med_matrix[i][0][0]
+                    mw = med_matrix[i][0][1]
+                    item = bb_groups[group][mw]
+
+                    distance = lv.distance(item, wordnet[j])
+                    row_results.append((distance, j))
+                # Sort the row based on the Levenshtein distances
+                row_results.sort(key=lambda x: x[0])
+                # fix
+                result.append((i, row_results))
+            return result
+
+        # Split the rows into chunks to distribute to processes
+        row_chunks = [rows[i:i + num_processes] for i in range(0, len(rows), num_processes)]
+
+        tmp_result = process_rows(row_chunks[0])
+
+        # Use multiprocessing.Pool to parallelize the processing of rows
+        with mp.Pool(processes=num_processes) as pool:
+            result_rows = pool.map(process_rows, row_chunks)
+
+        # Flatten the results from row chunks to a flat list
+        flattened_results = [result for chunk_results in result_rows for result in chunk_results]
+
+        # Update the med_matrix with the results
+        for row, results in flattened_results:
+            for result in results:
+                med_matrix[row][1:] = result
+    else:
+        for i in rows:
             for j in tqdm(range(wn_length)):
                 group = med_matrix[row][0][0]
                 mw = med_matrix[row][0][1]
