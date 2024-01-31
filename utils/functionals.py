@@ -11,7 +11,7 @@ num_cpu_cores = os.cpu_count() - 2
 path_to_cache = 'cache'
 bb_cache_filename = 'bb_groups.pkl'
 bb_groups_index_filename = 'bb_groups_index.pkl' # the dictionary to store
-
+toy = True
 
 # convert the birkbeck data to dictionary of correct to misspelled words
 def get_bb_groups(url):
@@ -76,10 +76,12 @@ def split_data(data, char):
 # levelshtein distance of each word in wordnet
 def create_med_matrix(bb_groups, wordnet, output = None):
 
+    if toy:
+        bb_groups = bb_groups[:10]
+        wordnet = wordnet[30:35]
+
     wn_length = len(wordnet) # number of tokens in wordnet
     num_groups_bb = len(bb_groups) # number of rows in bb_groups after grouping
-    toy_wn_length = 10
-    toy_num_groups_bb = 5
 
     if not output: output = 'cache/distances.pkl'
     med_matrix = [] # matrix for storing lv distances
@@ -87,17 +89,17 @@ def create_med_matrix(bb_groups, wordnet, output = None):
 
     # create matrix iteratively
     # there is a scope of parallelization here
-    for i in tqdm(range(toy_num_groups_bb)):
+    for i in tqdm(range(num_groups_bb)):
         # for each group we calculate the tuples and produce a row for them storing only the indices
         # e.g : for bb_group[i] = [car, care, cart], there will be one row for each tuple ...
         # ... (i, 1), (i, 2) and the correct spell 'car' will be addressed via (i, 0)
         # ... (i, j) = group i mw j
         for j in range(1, len(bb_groups[i])):
             med_matrix.append([(i, j)])
-            med_matrix[row] += [(-1, k) for k in range(toy_wn_length)]
+            med_matrix[row] += [(-1, k) for k in range(wn_length)]
             row += 1
 
-    assert len(med_matrix[0]) == toy_wn_length + 1
+    assert len(med_matrix[0]) == wn_length + 1
 
     # distribute the med task to cores
     rows = np.arange(row)
@@ -106,14 +108,20 @@ def create_med_matrix(bb_groups, wordnet, output = None):
     row = 0
     for batch in batches:
         for b in batch:
-            for j in range(toy_wn_length):
+            for j in tqdm(range(wn_length)):
                 group = med_matrix[row][0][0]
                 mw = med_matrix[row][0][1]
                 item = bb_groups[group][mw]
 
                 med_matrix[row][j + 1] = (lv.distance(item, wordnet[j]), j)
+            # sort the row based on the lv distances
+            med_matrix[row][1:] = sorted(med_matrix[row][1:], key = lambda x : x[0])
             row += 1
 
+    print(f'\nmed matrix after sorting : \n')
+    for i in rows:
+        print(f'{med_matrix[row]}')
+    print()
 
 
 
