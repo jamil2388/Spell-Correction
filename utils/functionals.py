@@ -41,11 +41,9 @@ def get_wordnet_index(output = None):
         # download the wordnet corpus
         nltk.download('wordnet')
         wordnet = list(wn.words(lang='eng'))
-        with open(output, 'wb') as f:
-            pickle.dump(wordnet, f)
+        save_file(wordnet, output)
     else:
-        with open(output, 'rb') as f:
-            wordnet = pickle.load(f)
+        wordnet = read_file(output)
     return wordnet
 
 
@@ -71,10 +69,13 @@ def split_data(data, char):
 
     return groups
 
-# create levenshtein distance matrix
+# create levenshtein distance matrix if not already saved
 # for each misspelled word in bb w_i, this will calculate the
 # levelshtein distance of each word in wordnet
-def create_med_matrix(bb_groups, wordnet, output = None):
+def get_med_matrix(bb_groups, wordnet, output = None):
+
+    if not output: output = 'cache/med_matrix_sorted.pkl'
+    if os.path.exists(output) : return read_file(output)
 
     if toy:
         bb_groups = bb_groups[:5]
@@ -83,7 +84,6 @@ def create_med_matrix(bb_groups, wordnet, output = None):
     wn_length = len(wordnet) # number of tokens in wordnet
     num_groups_bb = len(bb_groups) # number of rows in bb_groups after grouping
 
-    if not output: output = 'cache/distances.pkl'
     med_matrix = [] # matrix for storing lv distances
     row = 0 # count to store the number of misspelled tokens visited from bb_groups, also the current row count of the matrix
 
@@ -118,11 +118,26 @@ def create_med_matrix(bb_groups, wordnet, output = None):
             med_matrix[row][1:] = sorted(med_matrix[row][1:], key = lambda x : x[0])
             row += 1
 
+    assert row == len(rows)
+
     print(f'\nmed matrix after sorting : \n')
     for i in rows:
-        print(f'{med_matrix[row]}')
+        print(f'{med_matrix[i]}')
     print()
 
+    # save to cache
+    save_file(med_matrix, output)
 
 
+### utils
 
+# save as pickle
+def save_file(data, output):
+    # save the file given the output
+    with open(output, 'wb') as f:
+        pickle.dump(data)
+    print(f'\n saved file at : {output}\n')
+
+def read_file(input):
+    with open(input, 'rb') as f:
+        return pickle.load(f)

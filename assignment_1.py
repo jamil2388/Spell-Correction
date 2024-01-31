@@ -17,7 +17,7 @@ if __name__ == '__main__':
     bb_groups = F.get_bb_groups('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
     wordnet = F.get_wordnet_index('cache/wordnet_index.pkl')
 
-    F.create_med_matrix(bb_groups, wordnet)
+    F.get_med_matrix(bb_groups, wordnet)
 
     # spelling part
     correct_spellings = []
