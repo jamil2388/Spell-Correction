@@ -14,20 +14,10 @@ if __name__ == '__main__':
 
 
     # bb = birkbeck
-    bb_group = F.load_bb_groups('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
+    bb_groups = F.get_bb_groups('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
     wordnet = F.get_wordnet_index('cache/wordnet_index.pkl')
 
-
-
-    for i in tqdm(range(0, len(bb), 2)):
-        print(f'w1 : {bb[i]}, w2 : {bb[i + 1]}')
-
-    # subset = re.
-    for w in tqdm(wordnet):
-        if(w.islower()):
-            continue
-        d = lv.distance('desie', w)
-        print(f'desie, w : {w}, d : {d}')
+    F.create_med_matrix(bb_groups, wordnet)
 
     # spelling part
     correct_spellings = []
