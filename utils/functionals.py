@@ -77,8 +77,8 @@ def split_data(data, char):
 def create_med_matrix(bb_groups, wordnet, output = None):
 
     if toy:
-        bb_groups = bb_groups[:10]
-        wordnet = wordnet[30:35]
+        bb_groups = bb_groups[:5]
+        wordnet = wordnet[300:305]
 
     wn_length = len(wordnet) # number of tokens in wordnet
     num_groups_bb = len(bb_groups) # number of rows in bb_groups after grouping
