@@ -17,10 +17,17 @@ toy = params['toy']
 batched = params['batched']
 
 # print(num_cpu_cores, num_processes, path_to_cache, bb_groups_filename, toy, batched)
+# global variables required for the entire class
 med_matrix = [] # matrix for storing lv distances
+wordnet = None
+bb_groups = None
+wn_length = None
+num_groups_bb = None
 
 # convert the birkbeck data to dictionary of correct to misspelled words
 def get_bb_groups(url):
+    global bb_groups, num_groups_bb
+
     # birkbeck has
     # total words : 42269
     # correct words : 6136
@@ -37,11 +44,14 @@ def get_bb_groups(url):
 
         with open(bb_cache_filepath,'wb') as f:
             pickle.dump(bb_groups, f)
+    num_groups_bb = len(bb_groups)
     return bb_groups
 
 # convert the wordnet corpus to an indexed list
 # if already present, return from cache
 def get_wordnet_index(output = None):
+    global wordnet, wn_length
+
     if not output : output = 'cache/wordnet_index.pkl'
     if(not os.path.exists(output)):
         # download the wordnet corpus
@@ -50,6 +60,7 @@ def get_wordnet_index(output = None):
         save_file(wordnet, output)
     else:
         wordnet = read_file(output)
+    wn_length = len(wordnet)
     return wordnet
 
 
@@ -78,7 +89,8 @@ def split_data(data, char):
 # create levenshtein distance matrix if not already saved
 # for each misspelled word in bb w_i, this will calculate the
 # levelshtein distance of each word in wordnet
-def get_med_matrix(bb_groups, wordnet, output = None):
+def get_med_matrix(output = None):
+    global bb_groups, wordnet, wn_length, num_groups_bb
 
     if not output: output = f'cache/med_matrix_sorted{".toy" if toy else ""}.pkl'
     if os.path.exists(output) : return read_file(output)
@@ -86,9 +98,8 @@ def get_med_matrix(bb_groups, wordnet, output = None):
     if toy:
         bb_groups = bb_groups[:5]
         wordnet = wordnet[300:305]
-
-    wn_length = len(wordnet) # number of tokens in wordnet
-    num_groups_bb = len(bb_groups) # number of rows in bb_groups after grouping
+        wn_length = len(wordnet)
+        num_groups_bb = len(bb_groups)
 
     row = 0 # count to store the number of misspelled tokens visited from bb_groups, also the current row count of the matrix
 
@@ -109,64 +120,60 @@ def get_med_matrix(bb_groups, wordnet, output = None):
     # distribute the med task to cores
     rows = np.arange(row)
 
-    row = 0
-
-    if batched :
-        def process_rows(rows):
-            result = []
-            for i in tqdm(rows, position=0, leave=False):
-                row_results = []
-                for j in range(wn_length):
-                    group = med_matrix[i][0][0]
-                    mw = med_matrix[i][0][1]
-                    item = bb_groups[group][mw]
-
-                    distance = lv.distance(item, wordnet[j])
-                    row_results.append((distance, j))
-                # Sort the row based on the Levenshtein distances
-                row_results.sort(key=lambda x: x[0])
-                # fix
-                result.append((i, row_results))
-            return result
-
+    if batched:
         # Split the rows into chunks to distribute to processes
         row_chunks = [rows[i:i + num_processes] for i in range(0, len(rows), num_processes)]
 
-        tmp_result = process_rows(row_chunks[0])
+        # process_rows(row_chunks[1])
+        # print_matrix()
 
         # Use multiprocessing.Pool to parallelize the processing of rows
         with mp.Pool(processes=num_processes) as pool:
-            result_rows = pool.map(process_rows, row_chunks)
+            pool.map(process_rows, row_chunks)
 
-        # Flatten the results from row chunks to a flat list
-        flattened_results = [result for chunk_results in result_rows for result in chunk_results]
-
-        # Update the med_matrix with the results
-        for row, results in flattened_results:
-            for result in results:
-                med_matrix[row][1:] = result
+        # # Flatten the results from row chunks to a flat list
+        # flattened_results = [result for chunk_results in result_rows for result in chunk_results]
+        #
+        # # Update the med_matrix with the results
+        # for row, results in flattened_results:
+        #     for result in results:
+        #         med_matrix[row][1:] = result
     else:
-        for i in rows:
-            for j in tqdm(range(wn_length)):
-                group = med_matrix[row][0][0]
-                mw = med_matrix[row][0][1]
-                item = bb_groups[group][mw]
-
-                med_matrix[row][j + 1] = (lv.distance(item, wordnet[j]), j)
-            # sort the row based on the lv distances
-            med_matrix[row][1:] = sorted(med_matrix[row][1:], key = lambda x : x[0])
-            row += 1
-
-    assert row == len(rows)
+        # for i in rows:
+        #     for j in tqdm(range(wn_length)):
+        #         group = med_matrix[i][0][0]
+        #         mw = med_matrix[i][0][1]
+        #         item = bb_groups[group][mw]
+        #
+        #         med_matrix[i][j + 1] = (lv.distance(item, wordnet[j]), j)
+        #     # sort the row based on the lv distances
+        #     med_matrix[i][1:] = sorted(med_matrix[i][1:], key = lambda x : x[0])
+        process_rows(rows)
 
     print(f'\nmed matrix after sorting : \n')
-    for i in rows:
-        print(f'{med_matrix[i]}')
-    print()
+    print_matrix()
 
     # save to cache
     save_file(med_matrix, output)
 
+ # update the med_matrix with the sorted rows
+def process_rows(row_chunk, med_matrix, bb_groups, wordnet, num_groups_bb, wn_length):
+
+    for i in tqdm(row_chunk, position=0, leave=False):
+        row_result = []
+        for j in range(wn_length):
+            group = med_matrix[i][0][0]
+            mw = med_matrix[i][0][1]
+            item = bb_groups[group][mw]
+
+            distance = lv.distance(item, wordnet[j])
+            row_result.append((distance, j))
+        # Sort the row based on the Levenshtein distances
+        row_result.sort(key=lambda x: x[0])
+
+        # directly update the desired portion of the med_matrix
+        med_matrix[i][1:] = row_result
+    return med_matrix
 
 ### utils
 
@@ -180,3 +187,9 @@ def save_file(data, output):
 def read_file(input):
     with open(input, 'rb') as f:
         return pickle.load(f)
+
+# pretty print the med_matrix
+def print_matrix():
+    for i in range(len(med_matrix)):
+        print(f'{med_matrix[i]}')
+    print()
