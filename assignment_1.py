@@ -1,4 +1,6 @@
 # this package contains functions for finding the average s@k from Birkbrek to Wordnet
+import os.path
+
 import nltk
 import numpy as np
 from nltk.corpus import wordnet as wn
@@ -12,6 +14,9 @@ import pickle
 import utils.functionals as F
 
 if __name__ == '__main__':
+
+    if not os.path.exists('cache'): os.mkdir('cache')
+
 
     # bb = birkbeck
     bb_groups = F.get_bb_groups('https://www.dcs.bbk.ac.uk/~roger/missp.dat') # bb = birkbeck as list
