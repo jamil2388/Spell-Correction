@@ -15,7 +15,7 @@ pip install -r requirements.txt
 python -u assignment1.py
 
 # run stats
-| #Birkbeck Groups | #Wordnet Words | Without Threading | Threading 4096 | % Speed Boost | Threading 16384 | % Speed Boost | 
-|------------------|----------------| ----------------- |----------------| ------------- | --------------- | ------------- |
-| 200              | 100000         | 2.49 minutes | 
+| #Birkbeck Groups | #Wordnet Words | 1 CPU Core   | 4 CPU Cores | % Speed Boost | 8 CPU Cores | % Speed Boost | 
+|------------------|----------------|--------------|-------------| ------------- |-------------| ------------- |
+| 200              | 100000         | 2.49 minutes | 2.09 minutes | 
 

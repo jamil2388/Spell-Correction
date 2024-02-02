@@ -7,9 +7,8 @@ from nltk.corpus import wordnet as wn
 import Levenshtein as lv
 from tqdm import tqdm
 import numpy as np
-import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
 from param import settings as params
-from functools import partial
 
 num_cpu_cores = params['num_cpu_cores']
 num_processes = num_cpu_cores
@@ -17,7 +16,6 @@ path_to_cache = params['path_to_cache']
 bb_groups_filename = params['bb_groups_filename']
 toy = params['toy']
 batched = params['batched']
-num_threads = params['num_threads']
 
 # print(num_cpu_cores, num_processes, path_to_cache, bb_groups_filename, toy, batched)
 # global variables required for the entire class
@@ -94,13 +92,15 @@ def split_data(data, char):
 # for each misspelled word in bb w_i, this will calculate the
 # levelshtein distance of each word in wordnet
 def get_med_matrix(output = None):
-    global bb_groups, wordnet, wn_length, num_groups_bb, num_matrix_rows
+    global med_matrix, bb_groups, wordnet, wn_length, num_groups_bb, num_matrix_rows
 
     if not output: output = f'{path_to_cache}/med_matrix_sorted{".toy" if toy else ""}.pkl'
-    if os.path.exists(output) : return read_file(output)
+    if os.path.exists(output) :
+        med_matrix = read_file(output)
+        return med_matrix
 
     if toy:
-        bb_groups = bb_groups[0:10]
+        bb_groups = bb_groups[0:6]
         wordnet = wordnet[300:305]
         wn_length = len(wordnet)
         num_groups_bb = len(bb_groups)
@@ -130,13 +130,23 @@ def get_med_matrix(output = None):
 
     if batched:
         # Split data into chunks
-        chunks = chunk_data(rows, num_threads)
+        row_chunks = chunk_data(rows, num_processes)
         # Call the parallel processing function for each chunk
-        for idx, row_chunk in enumerate(chunks):
-            process_rows_parallel(row_chunk, bb_groups, wordnet, wn_length, \
-                                  progress_desc=f'Processing Chunk {idx + 1}/{len(chunks)}')
+        with ProcessPoolExecutor(max_workers=num_processes) as executor:
+            # results = executor.map(do_sth, durations)
+            futures = []
+            # row_chunk contains row indices for this instance
+            for row_chunk in row_chunks:
+                start_row = row_chunk[0]
+                last_row = row_chunk[-1]
+                futures.append(executor.submit(process_rows_mp, row_chunk, med_matrix[start_row: last_row + 1], bb_groups, wordnet, wn_length))
+                # print_matrix(process_rows_mp(row_chunk, med_matrix[start_row: last_row + 1], bb_groups, wordnet, wn_length))
+            for i, row_chunk in enumerate(row_chunks):
+                result = futures[i].result()
+                start_row = row_chunk[0]
+                last_row = row_chunk[-1]
+                med_matrix[start_row:last_row + 1] = result
     else:
-
         process_rows(rows)
 
     end = time.time()
@@ -171,7 +181,7 @@ def process_rows(row_chunk, progress_desc = None):
         # directly update the desired portion of the med_matrix
         med_matrix[i][1:] = row_result
 
-# Function to chunk the data, num_chunks = num_threads
+# Function to chunk the data, num_chunks = num_processes
 def chunk_data(data_indices, num_chunks):
 
     chunk_size = len(data_indices) // num_chunks
@@ -187,7 +197,7 @@ def calc_s_at_k(output = None):
 
     # num_columns = 3 for s@k with 1, 5 and 10
     s_at_k = np.full((num_matrix_rows, 3), 0)
-    for i in range(num_matrix_rows):
+    for i in tqdm(range(num_matrix_rows)):
         group = med_matrix[i][0][0]
         for j in range(1, 11):
             correct_word = bb_groups[group][0]
@@ -198,19 +208,74 @@ def calc_s_at_k(output = None):
                 s_at_k[i][0] = 1
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
                 break
             if((j >= 5 and j < 10) and correct_word == dict_word):
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
                 break
             if(j == 10 and correct_word == dict_word):
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
     # save to cache
     save_file(s_at_k, output)
     return s_at_k
+
+def get_s_at_k_parallel(output = None):
+
+    if not output: output = f'{path_to_cache}/s_at_k{".toy" if toy else ""}.pkl'
+    if os.path.exists(output): return read_file(output)
+
+    # num_columns = 3 for s@k with 1, 5 and 10
+    s_at_k = np.full((num_matrix_rows, 3), 0)
+    row_chunks = chunk_data(list(range(num_matrix_rows)), num_processes)
+
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        # results = executor.map(do_sth, durations)
+        futures = []
+        # row_chunk contains row indices for this instance
+        for row_chunk in row_chunks:
+            start_row = row_chunk[0]
+            last_row = row_chunk[-1]
+            futures.append(
+                executor.submit(calc_s_at_k_chunk, row_chunk, s_at_k[start_row: last_row + 1], med_matrix[start_row: last_row + 1], bb_groups, wordnet))
+            # print_matrix(process_rows_mp(row_chunk, med_matrix[start_row: last_row + 1], bb_groups, wordnet, wn_length))
+        for i, row_chunk in enumerate(row_chunks):
+            result = futures[i].result()
+            start_row = row_chunk[0]
+            last_row = row_chunk[-1]
+            s_at_k[start_row:last_row + 1] = result
+
+
+    # save to cache
+    save_file(s_at_k, output)
+    return s_at_k
+
+def calc_s_at_k_chunk(row_chunk, sk_chunk, mm_chunk, bb_groups, wordnet):
+
+    for i in tqdm(enumerate(range(row_chunk))):
+        group = mm_chunk[i][0][0]
+        for j in range(1, 11):
+            correct_word = bb_groups[group][0]
+            dict_word_index = mm_chunk[i][j][1]
+            dict_word = wordnet[dict_word_index]
+
+            if((j >= 1 and j < 5) and correct_word == dict_word):
+                sk_chunk[i][0] = 1
+                sk_chunk[i][1] = 1
+                sk_chunk[i][2] = 1
+                # print(f'found match for : {correct_word}')
+                break
+            if((j >= 5 and j < 10) and correct_word == dict_word):
+                sk_chunk[i][1] = 1
+                sk_chunk[i][2] = 1
+                # print(f'found match for : {correct_word}')
+                break
+            if(j == 10 and correct_word == dict_word):
+                sk_chunk[i][2] = 1
+                # print(f'found match for : {correct_word}')
+    return sk_chunk
 
 ### utils
 
@@ -226,43 +291,28 @@ def read_file(input):
         return pickle.load(f)
 
 # pretty print the med_matrix
-def print_matrix():
+def print_matrix(med_matrix = None):
     for i in range(len(med_matrix)):
         print(f'{med_matrix[i]}')
     print()
 
 ## multiprocessing section
-def process_rows_mp(i, med_matrix, bb_groups, wordnet, wn_length, shared_med_matrix):
-    row_result = []
-    for j in range(wn_length):
-        group = med_matrix[i][0][0]
-        mw = med_matrix[i][0][1]
-        item = bb_groups[group][mw]
+# mm = med_matrix
+# here the row indices of the mm_chunk will always be from 0 -> size(row_chunk) - 1
+def process_rows_mp(row_chunk, mm_chunk, bb_groups, wordnet, wn_length, progress_desc = None):
 
-        distance = lv.distance(item, wordnet[j])
-        row_result.append((distance, j))
-    # Sort the row based on the Levenshtein distances
-    row_result.sort(key=lambda x: x[0])
+    for i, row in tqdm(enumerate(row_chunk), position=0, leave=False, desc=progress_desc):
+        row_result = []
+        for j in range(wn_length):
+            group = mm_chunk[i][0][0]
+            mw = mm_chunk[i][0][1]
+            item = bb_groups[group][mw]
 
-    # directly update the shared med_matrix
-    shared_med_matrix[i][1:] = row_result
+            distance = lv.distance(item, wordnet[j])
+            row_result.append((distance, j))
+        # Sort the row based on the Levenshtein distances
+        row_result.sort(key=lambda x: x[0])
 
-def process_rows_parallel(row_chunk, bb_groups, wordnet, wn_length, progress_desc=None, num_processes=4):
-    global med_matrix
-    manager = mp.Manager()
-    shared_med_matrix = manager.list(med_matrix)
-
-    pool = mp.Pool(processes=num_processes)
-
-    # Using partial to create a function with fixed arguments
-    partial_process_rows = partial(process_rows_mp, med_matrix=med_matrix, bb_groups=bb_groups, wordnet=wordnet, wn_length=wn_length, shared_med_matrix=shared_med_matrix)
-
-    # tqdm can be used to track the progress of the parallel computation
-    for _ in tqdm(pool.imap_unordered(partial_process_rows, row_chunk), total=len(row_chunk), position=0, leave=False, desc=progress_desc):
-        pass
-
-    pool.close()
-    pool.join()
-
-    # Update the original med_matrix with the shared_med_matrix
-    med_matrix[:] = list(shared_med_matrix)
+        # directly update the desired portion of the med_matrix
+        mm_chunk[i][1:] = row_result
+    return mm_chunk
