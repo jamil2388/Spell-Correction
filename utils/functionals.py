@@ -7,8 +7,9 @@ from nltk.corpus import wordnet as wn
 import Levenshtein as lv
 from tqdm import tqdm
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
+import multiprocessing as mp
 from param import settings as params
+from functools import partial
 
 num_cpu_cores = params['num_cpu_cores']
 num_processes = num_cpu_cores
@@ -99,8 +100,8 @@ def get_med_matrix(output = None):
     if os.path.exists(output) : return read_file(output)
 
     if toy:
-        bb_groups = bb_groups[0:300]
-        wordnet = wordnet[100:1000]
+        bb_groups = bb_groups[0:10]
+        wordnet = wordnet[300:305]
         wn_length = len(wordnet)
         num_groups_bb = len(bb_groups)
 
@@ -130,12 +131,10 @@ def get_med_matrix(output = None):
     if batched:
         # Split data into chunks
         chunks = chunk_data(rows, num_threads)
-        # Create separate progress bar descriptions for each thread
-        progress_descriptions = [f'Thread {i}' for i in range(num_threads)]
-
-        with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            # Launch threads with chunks
-            executor.map(process_rows, chunks, progress_descriptions)
+        # Call the parallel processing function for each chunk
+        for idx, row_chunk in enumerate(chunks):
+            process_rows_parallel(row_chunk, bb_groups, wordnet, wn_length, \
+                                  progress_desc=f'Processing Chunk {idx + 1}/{len(chunks)}')
     else:
 
         process_rows(rows)
@@ -231,3 +230,39 @@ def print_matrix():
     for i in range(len(med_matrix)):
         print(f'{med_matrix[i]}')
     print()
+
+## multiprocessing section
+def process_rows_mp(i, med_matrix, bb_groups, wordnet, wn_length, shared_med_matrix):
+    row_result = []
+    for j in range(wn_length):
+        group = med_matrix[i][0][0]
+        mw = med_matrix[i][0][1]
+        item = bb_groups[group][mw]
+
+        distance = lv.distance(item, wordnet[j])
+        row_result.append((distance, j))
+    # Sort the row based on the Levenshtein distances
+    row_result.sort(key=lambda x: x[0])
+
+    # directly update the shared med_matrix
+    shared_med_matrix[i][1:] = row_result
+
+def process_rows_parallel(row_chunk, bb_groups, wordnet, wn_length, progress_desc=None, num_processes=4):
+    global med_matrix
+    manager = mp.Manager()
+    shared_med_matrix = manager.list(med_matrix)
+
+    pool = mp.Pool(processes=num_processes)
+
+    # Using partial to create a function with fixed arguments
+    partial_process_rows = partial(process_rows_mp, med_matrix=med_matrix, bb_groups=bb_groups, wordnet=wordnet, wn_length=wn_length, shared_med_matrix=shared_med_matrix)
+
+    # tqdm can be used to track the progress of the parallel computation
+    for _ in tqdm(pool.imap_unordered(partial_process_rows, row_chunk), total=len(row_chunk), position=0, leave=False, desc=progress_desc):
+        pass
+
+    pool.close()
+    pool.join()
+
+    # Update the original med_matrix with the shared_med_matrix
+    med_matrix[:] = list(shared_med_matrix)
