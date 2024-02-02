@@ -95,7 +95,7 @@ def split_data(data, char):
 def get_med_matrix(output = None):
     global bb_groups, wordnet, wn_length, num_groups_bb, num_matrix_rows
 
-    if not output: output = f'cache/med_matrix_sorted{".toy" if toy else ""}.pkl'
+    if not output: output = f'{path_to_cache}/med_matrix_sorted{".toy" if toy else ""}.pkl'
     if os.path.exists(output) : return read_file(output)
 
     if toy:
@@ -150,7 +150,7 @@ def get_med_matrix(output = None):
     # print_matrix()
 
     # save to cache
-    # save_file(med_matrix, output)
+    save_file(med_matrix, output)
     return med_matrix
 
  # update the med_matrix with the sorted rows
@@ -180,8 +180,11 @@ def chunk_data(data_indices, num_chunks):
     return chunks
 
 # calculate s@k for all the elements in the matrix
-def calc_s_at_k():
+def calc_s_at_k(output = None):
     global num_matrix_rows, med_matrix
+
+    if not output: output = f'{path_to_cache}/s_at_k{".toy" if toy else ""}.pkl'
+    if os.path.exists(output): return read_file(output)
 
     # num_columns = 3 for s@k with 1, 5 and 10
     s_at_k = np.full((num_matrix_rows, 3), 0)
@@ -206,6 +209,8 @@ def calc_s_at_k():
             if(j == 10 and correct_word == dict_word):
                 s_at_k[i][2] = 1
                 print(f'found match for : {correct_word}')
+    # save to cache
+    save_file(s_at_k, output)
     return s_at_k
 
 ### utils
@@ -214,7 +219,7 @@ def calc_s_at_k():
 def save_file(data, output):
     # save the file given the output
     with open(output, 'wb') as f:
-        pickle.dump(data)
+        pickle.dump(data, f)
     print(f'\n saved file at : {output}\n')
 
 def read_file(input):
