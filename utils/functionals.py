@@ -100,7 +100,7 @@ def get_med_matrix(output = None):
         return med_matrix
 
     if toy:
-        bb_groups = bb_groups[0:200]
+        bb_groups = bb_groups[0:500]
         wordnet = wordnet[0:100000]
         wn_length = len(wordnet)
         num_groups_bb = len(bb_groups)
