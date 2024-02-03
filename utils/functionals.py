@@ -100,8 +100,8 @@ def get_med_matrix(output = None):
         return med_matrix
 
     if toy:
-        bb_groups = bb_groups[0:6]
-        wordnet = wordnet[300:305]
+        bb_groups = bb_groups[0:200]
+        wordnet = wordnet[0:100000]
         wn_length = len(wordnet)
         num_groups_bb = len(bb_groups)
 
@@ -189,8 +189,8 @@ def chunk_data(data_indices, num_chunks):
     return chunks
 
 # calculate s@k for all the elements in the matrix
-def calc_s_at_k(output = None):
-    global num_matrix_rows, med_matrix
+def calc_s_at_k(med_matrix = None, output = None):
+    global num_matrix_rows
 
     if not output: output = f'{path_to_cache}/s_at_k{".toy" if toy else ""}.pkl'
     if os.path.exists(output): return read_file(output)
@@ -208,25 +208,26 @@ def calc_s_at_k(output = None):
                 s_at_k[i][0] = 1
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                # print(f'found match for : {correct_word}')
+                print(f'found match for : {correct_word}')
                 break
             if((j >= 5 and j < 10) and correct_word == dict_word):
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                # print(f'found match for : {correct_word}')
+                print(f'found match for : {correct_word}')
                 break
             if(j == 10 and correct_word == dict_word):
                 s_at_k[i][2] = 1
-                # print(f'found match for : {correct_word}')
+                print(f'found match for : {correct_word}')
     # save to cache
     save_file(s_at_k, output)
     return s_at_k
 
-def get_s_at_k_parallel(output = None):
+def get_s_at_k_parallel(med_matrix = None, output = None):
 
     if not output: output = f'{path_to_cache}/s_at_k{".toy" if toy else ""}.pkl'
     if os.path.exists(output): return read_file(output)
 
+    num_matrix_rows = len(med_matrix)
     # num_columns = 3 for s@k with 1, 5 and 10
     s_at_k = np.full((num_matrix_rows, 3), 0)
     row_chunks = chunk_data(list(range(num_matrix_rows)), num_processes)
@@ -240,7 +241,7 @@ def get_s_at_k_parallel(output = None):
             last_row = row_chunk[-1]
             futures.append(
                 executor.submit(calc_s_at_k_chunk, row_chunk, s_at_k[start_row: last_row + 1], med_matrix[start_row: last_row + 1], bb_groups, wordnet))
-            # print_matrix(process_rows_mp(row_chunk, med_matrix[start_row: last_row + 1], bb_groups, wordnet, wn_length))
+            # calc_s_at_k_chunk(row_chunk, s_at_k[start_row: last_row + 1], med_matrix[start_row: last_row + 1], bb_groups, wordnet)
         for i, row_chunk in enumerate(row_chunks):
             result = futures[i].result()
             start_row = row_chunk[0]
@@ -254,7 +255,7 @@ def get_s_at_k_parallel(output = None):
 
 def calc_s_at_k_chunk(row_chunk, sk_chunk, mm_chunk, bb_groups, wordnet):
 
-    for i in tqdm(enumerate(range(row_chunk))):
+    for i, row in enumerate(tqdm(row_chunk)):
         group = mm_chunk[i][0][0]
         for j in range(1, 11):
             correct_word = bb_groups[group][0]
@@ -301,7 +302,7 @@ def print_matrix(med_matrix = None):
 # here the row indices of the mm_chunk will always be from 0 -> size(row_chunk) - 1
 def process_rows_mp(row_chunk, mm_chunk, bb_groups, wordnet, wn_length, progress_desc = None):
 
-    for i, row in tqdm(enumerate(row_chunk), position=0, leave=False, desc=progress_desc):
+    for i, row in enumerate(tqdm(row_chunk, leave=False, desc=progress_desc)):
         row_result = []
         for j in range(wn_length):
             group = mm_chunk[i][0][0]
