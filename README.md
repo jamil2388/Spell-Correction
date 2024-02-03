@@ -29,9 +29,11 @@ python -u assignment1.py
 ```
 
 # Run Stats
-| #Birkbeck Groups | #Wordnet Words | 1 CPU Core  | 4 CPU Cores | % Speed Boost | 8 CPU Cores | % Speed Boost | 
-|------------------|----------------|-------------|------------| ------------- |-------------| ------------- |
-| 500              | 100000         |  minutes    | 3.9606 minutes | 
+| #Birkbeck Groups | #Wordnet Words | 1 CPU Core      | 4 CPU Cores      | % Speed Boost | 32 CPU Cores    | % Speed Boost | 
+|------------------|----------------|-----------------|------------------| ------------- |-----------------| ------------- |
+| 200              | 100000         | 3.03 minutes    | 3.9606 minutes   | ----------- | ----------      | ------------- |
+| 500              | 100000         | 12.2290 minutes | 16.1722 minutes  | ----------- | 12.6750 minutes | ------------- |
+| 6136             | 147306         | Process killed  | --------------   | ----------- | ----------      | ------------- |
 
 # Results
 For the entire dataset, the average s@k was calculated for k = 1, 5 and 10
