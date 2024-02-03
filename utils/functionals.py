@@ -208,16 +208,16 @@ def calc_s_at_k(med_matrix = None, output = None):
                 s_at_k[i][0] = 1
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
                 break
             if((j >= 5 and j < 10) and correct_word == dict_word):
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
                 break
             if(j == 10 and correct_word == dict_word):
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
     # save to cache
     save_file(s_at_k, output)
     return s_at_k
