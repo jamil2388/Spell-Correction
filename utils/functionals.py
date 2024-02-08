@@ -16,6 +16,7 @@ num_processes = num_cpu_cores
 path_to_cache = params["path_to_cache"]
 cw_filename = params["cw_filename"]
 iw_filename = params["iw_filename"]
+iw_matrix_filename = params["iw_matrix_filename"]
 toy = params["toy"]
 batched = params["batched"]
 
@@ -117,6 +118,9 @@ def process_chunk(iw_chunk, wordnet):
 
 def get_iw_matrix(iw, wordnet):
 
+    iw_matrix_filepath = f'{path_to_cache}/{iw_matrix_filename}'
+    if os.path.exists(iw_matrix_filepath): return read_file(iw_matrix_filepath)
+
     if batched:
         iw_chunks = chunk_data(np.arange(len(iw)), num_processes)
 
@@ -136,6 +140,9 @@ def get_iw_matrix(iw, wordnet):
         for i, iw_matrix_chunk in enumerate(iw_matrix_chunks):
             iw_matrix = iw_matrix_chunk if i == 0 else iw_matrix + iw_matrix_chunk
         print_matrix(iw_matrix)
+
+    # save file
+    save_file(iw_matrix, iw_matrix_filepath)
     return iw_matrix
 
 

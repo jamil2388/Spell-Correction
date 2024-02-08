@@ -6,6 +6,7 @@ settings = {
     "path_to_cache": "cache",
     "cw_filename": "cw.pkl", # cw is a dict storing the mapping from incorrect words to correct words in bb
     "iw_filename": "iw.pkl", # iw is a list storing only the incorrect words of bb
+    "iw_matrix_filename": "iw_matrix.pkl", # iw_matrix stores the k_nearest word indices in tuples
     "toy": 1,  # 1 => True
     "batched": 1,  # 1 => True
     "toy_wn_start":300, # start index for toy data
