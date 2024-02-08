@@ -55,7 +55,7 @@ def get_bb_groups(url):
         save_file(cw, cw_filepath)
         save_file(iw, iw_filepath)
 
-    iw = iw[toy_bb_start : toy_bb_end + 1]
+    if toy : iw = iw[toy_bb_start : toy_bb_end + 1]
     bb_length = len(iw)
     return cw, iw
 
