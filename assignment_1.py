@@ -35,9 +35,9 @@ if __name__ == "__main__":
 
     # total timing of the entire run
     global_end_time = time.time()
-    global_total_time = global_end_time - global_start_time
+    global_total_time = (global_end_time - global_start_time) / 60
     print('\n---------------- Time Taken ---------------\n')
-    print(f'Total Time taken by the entire program : {(global_total_time / 60):.4f} minutes')
+    print(f'Total Time taken by the entire program : {global_total_time:.4f} minutes')
     print('\n---------------- |||||||||| ---------------\n')
 
     # print(f"\ns@k entries having 1 : \n{np.argwhere(s_at_k == 1).sum()}\n\n")
