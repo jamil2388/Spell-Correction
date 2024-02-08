@@ -98,7 +98,7 @@ def split_data(data, char):
     return cw, iw
 
 # iw_chunk = indices of the chunk
-def get_k_nearest_words_in_chunk(iw_chunk, wordnet,  k=3):
+def get_k_nearest_words_in_chunk(iw_chunk, wordnet,  k=10):
 
     iw_chunk_matrix = []
 
