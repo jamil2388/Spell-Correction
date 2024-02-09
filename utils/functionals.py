@@ -146,29 +146,32 @@ def get_iw_matrix(iw, wordnet):
     return iw_matrix
 
 # row_chunk = row chunk indices
-def calc_s_at_k(iw, iw_matrix, cw, wordnet, k = 10):
+def calc_s_at_k(iw, cw, iw_matrix, wordnet, k = 10):
     len_iw_matrix = len(iw_matrix)
-    s_at_k = [[-1 for j in range(k)] for i in range(len_iw_matrix)]
+    s_at_k = np.full((len_iw_matrix, 3), 0)
 
     for i, row in enumerate(tqdm(iw_matrix)):
         incorrect_word = iw[i]
         correct_word = cw[incorrect_word] # the correct word of the current incorrect word
-        for j in range(1, k + 1):
+        for j in range(k):
             wn_index = iw_matrix[i][j][0] # the index of the current wordnet word in this iw_matrix cell
             wn = wordnet[wn_index] # the current wordnet word in this iw_matrix cell
 
-            if((j >= 1 and j < 5) and correct_word in wn):
+            # k = 1 range 0 - 3 (inclusive)
+            if((j >= 0 and j < 4) and correct_word in wn):
                 s_at_k[i][0] = 1
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
                 print(f'found match for : {correct_word}')
                 break
-            if((j >= 5 and j < 10) and correct_word in wn):
+            # k = 2 range 4 - 8 (inclusive)
+            if((j >= 4 and j < 9) and correct_word in wn):
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
                 print(f'found match for : {correct_word}')
                 break
-            if(j == 10 and correct_word in wn):
+            # k = 3 range 9 (inclusive)
+            if(j == 9 and correct_word in wn):
                 s_at_k[i][2] = 1
                 print(f'found match for : {correct_word}')
     return s_at_k
