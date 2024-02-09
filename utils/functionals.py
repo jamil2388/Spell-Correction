@@ -162,18 +162,18 @@ def calc_s_at_k(iw, cw, iw_matrix, wordnet, k = 10):
                 s_at_k[i][0] = 1
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
                 break
             # k = 2 range 4 - 8 (inclusive)
             if((j >= 4 and j < 9) and correct_word in wn):
                 s_at_k[i][1] = 1
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
                 break
             # k = 3 range 9 (inclusive)
             if(j == 9 and correct_word in wn):
                 s_at_k[i][2] = 1
-                print(f'found match for : {correct_word}')
+                # print(f'found match for : {correct_word}')
     return s_at_k
 
 ### utils
