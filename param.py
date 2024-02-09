@@ -10,7 +10,7 @@ settings = {
     "toy": 1,  # 1 => True
     "batched": 1,  # 1 => True
     "toy_wn_start":300, # start index for toy data
-    "toy_wn_end":305,
+    "toy_wn_end":312,
     "toy_bb_start":200,
     "toy_bb_end":206,
 }

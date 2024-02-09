@@ -18,20 +18,9 @@ if __name__ == "__main__":
         "https://www.dcs.bbk.ac.uk/~roger/missp.dat"
     )  # bb = birkbeck as list
     wordnet = F.get_wordnet_index("cache/wordnet_index.pkl")
-
-    iw_matrix = None
-    # if batched:
-    #     iw_chunks = F.chunk_data(np.arange(len(iw)), F.num_processes)
-    #     for i, iw_chunk in enumerate(iw_chunks):
-    #         start = iw_chunk[0]
-    #         end = iw_chunk[-1]
-    #         if i > 0:
-    #             iw_matrix += F.get_k_nearest_words_in_chunk(iw[start:end + 1], wordnet)
-    #         else:
-    #             iw_matrix = F.get_k_nearest_words_in_chunk(iw[start:end + 1], wordnet)
-
     iw_matrix = F.get_iw_matrix(iw, wordnet)
 
+    s_at_k = F.calc_s_at_k(iw, cw, iw_matrix, wordnet)
 
     # total timing of the entire run
     global_end_time = time.time()
