@@ -7,6 +7,7 @@ settings = {
     "cw_filename": "cw.pkl", # cw is a dict storing the mapping from incorrect words to correct words in bb
     "iw_filename": "iw.pkl", # iw is a list storing only the incorrect words of bb
     "iw_matrix_filename": "iw_matrix.pkl", # iw_matrix stores the k_nearest word indices in tuples
+    "wordnet_by_length_filename": "wordnet_by_length.pkl",
     "toy": 0,  # 1 => True for using a subset of data defined in the toy section below
     "batched": 1,  # 1 => True for using multiprocessing with num_cpu_cores
 

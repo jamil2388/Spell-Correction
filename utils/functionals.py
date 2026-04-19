@@ -17,6 +17,7 @@ path_to_cache = params["path_to_cache"]
 cw_filename = params["cw_filename"]
 iw_filename = params["iw_filename"]
 iw_matrix_filename = params["iw_matrix_filename"]
+wordnet_by_length_filename = params["wordnet_by_length_filename"]
 toy = params["toy"]
 batched = params["batched"]
 
@@ -78,6 +79,22 @@ def get_wordnet_index(output=None):
     if toy: wordnet = wordnet[toy_wn_start:toy_wn_end + 1]
     wn_length = len(wordnet)
     return wordnet
+
+
+def get_wordnet_by_length(wordnet):
+    output = f"{path_to_cache}/{wordnet_by_length_filename}"
+    if os.path.exists(output):
+        return read_file(output)
+
+    wordnet_by_length = {}
+    for word in wordnet:
+        length = len(word)
+        if length not in wordnet_by_length:
+            wordnet_by_length[length] = []
+        wordnet_by_length[length].append(word)
+
+    save_file(wordnet_by_length, output)
+    return wordnet_by_length
 
 
 # split the data into groups of words separated by words starting with the character char

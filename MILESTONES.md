@@ -6,11 +6,11 @@
 
 - [ ] **1. Project Setup & Documentation**
     - [x] Create `MILESTONES.md` to track progress.
-    - [ ] Update `README.md` with the new project direction.
+    - [x] Update `README.md` with the new project direction.
 
-- [ ] **2. Data Optimization**
-    - [ ] Pre-process Wordnet dictionary into a length-indexed dictionary (e.g., `{length: [words]}`) for faster filtering.
-    - [ ] Implement a caching mechanism for the length-indexed dictionary.
+- [x] **2. Data Optimization**
+    - [x] Pre-process Wordnet dictionary into a length-indexed dictionary (e.g., `{length: [words]}`) for faster filtering.
+    - [x] Implement a caching mechanism for the length-indexed dictionary.
 
 - [ ] **3. Core Suggestion Logic**
     - [ ] Implement length-based filtering: Search only words within the range `[len(input) - 2, len(input) + 3]`.

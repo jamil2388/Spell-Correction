@@ -43,9 +43,9 @@ The goal of this project is to measure the **Success at k (s@k)** metric for mis
         - `iw_matrix.pkl`: The calculated top-k nearest words for every misspelled word.
 
 ### 4.2 Key Modules
-- `assignment_1.py`: Main execution script.
+- `assignment_1.py`: Main execution script for batch evaluation.
 - `param.py`: Configuration and hyperparameters.
-- `utils/functionals.py`: Core functional logic for data processing, parallelization, and distance calculations.
+- `utils/functionals.py`: Core functional logic for data processing, parallelization, distance calculations, and length-indexed dictionary management.
 
 ## 5. Performance Benchmarks
 Testing on a server with 40 CPU cores showed near-linear scaling for large datasets:
@@ -66,3 +66,19 @@ For the full dataset, the average s@k values achieved are:
 2. Install dependencies: `pip install -r requirements.txt`.
 3. Configure `param.py` (e.g., set `toy: 1` for a quick test run).
 4. Execute: `python assignment_1.py`.
+
+## 8. Real-time Spell Correction Optimization
+
+### 8.1 Data Optimization (Milestone 2) - [COMPLETE]
+To enable real-time performance, the linear search across the entire Wordnet corpus (147k words) is optimized using a length-indexed dictionary.
+
+**Implemented Details:**
+1.  **Grouped by Length:** Wordnet vocabulary is processed into a dictionary where each key is an integer representing the word length.
+2.  **Caching Mechanism:** 
+    - The indexed dictionary is stored as `cache/wordnet_by_length.pkl`.
+    - Implemented lazy-loading via `get_wordnet_by_length()` to minimize overhead.
+3.  **Search Scope Reduction:** Future correction logic will only consider words within the range of `[len(input) - 2, len(input) + 3]`.
+
+### 8.2 Interactive Logic (Milestone 3 & 4)
+- **Top-K Retrieval:** Suggestions are ranked by Levenshtein distance, and only the top $k$ (default 5 or 10) are returned.
+- **Dynamic Input Handling:** The system will simulate "as-you-type" suggestions by responding to each incremental update of the user's input.

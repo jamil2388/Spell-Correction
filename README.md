@@ -1,13 +1,14 @@
-# Spell-Correction
-This project involves calculating s@k for misspelled tokens in Birkbeck corpus and tokens in Wordnet with the aid of MED (Minimum Edit Distance)
+# Real-time Spell-Correction
+This project provides an interactive spell-correction system that suggests words from Wordnet based on user input. It uses Minimum Edit Distance (Levenshtein) to find the closest matches, optimized with length-based filtering for real-time performance.
 
-# Dataset Details
-Birkbeck <br>
-Total number of correct words : 6136 <br>
-Total misspelled words : 36134 <br>
-<br>
-Wordnet <br>
-Total number of words (all correct) in the corpus : 147306 <br>
+## Features
+- **Interactive Suggestions:** Get top-k spelling suggestions as you type.
+- **Length-based Optimization:** Searches only words within the range of `[len(input) - 2, len(input) + 3]` to ensure fast response times.
+- **Evaluation Mode:** The original core logic for calculating s@k for misspelled tokens in the Birkbeck corpus against Wordnet is still supported.
+
+## Dataset Details
+- **Birkbeck:** 6,136 correct words, 36,134 misspelled words.
+- **Wordnet:** Reference dictionary with 147,306 words.
 
 # Environment setup
 python 3.10 recommended <br>
